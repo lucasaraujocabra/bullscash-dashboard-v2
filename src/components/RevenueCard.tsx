@@ -1,0 +1,137 @@
+import { useMemo, useState } from 'react'
+import { Info } from '@phosphor-icons/react'
+import { todayTx, series7d, series30d, kpis } from '../lib/data'
+import { money } from '../lib/format'
+import { Money, Delta, Segmented, SectionHead, useSize } from './ui'
+
+type Period = 'hoje' | '7d' | '30d'
+type Pt = { label: string; tip: string; value: number }
+
+/* Hoje é acumulado por hora: a curva fecha exatamente no total do rodapé. */
+const hourly: Pt[] = (() => {
+  let acc = 0
+  return Array.from({ length: 22 }, (_, h) => {
+    acc += todayTx.filter(t => t.status === 'approved' && t.at.getHours() === h).reduce((s, t) => s + t.amount, 0)
+    return { label: `${String(h).padStart(2, '0')}h`, tip: `Hoje, ${String(h).padStart(2, '0')}:59`, value: acc }
+  })
+})()
+const daily = (s: { label: string; value: number }[]): Pt[] => s.map(p => ({ ...p, tip: p.label }))
+
+const DATA: Record<Period, { pts: Pt[]; total: number; delta: number; vs: string }> = {
+  hoje: { pts: hourly, total: kpis.gross, delta: kpis.deltaVsYesterday, vs: 'vs. ontem no mesmo horário' },
+  '7d': { pts: daily(series7d), total: series7d.reduce((s, p) => s + p.value, 0), delta: 12.83, vs: 'vs. 7 dias anteriores' },
+  '30d': { pts: daily(series30d), total: series30d.reduce((s, p) => s + p.value, 0), delta: 19.23, vs: 'vs. 30 dias anteriores' },
+}
+
+const bestHour = (() => {
+  const by = Array.from({ length: 24 }, (_, h) => todayTx.filter(t => t.status === 'approved' && t.at.getHours() === h).reduce((s, t) => s + t.amount, 0))
+  const h = by.indexOf(Math.max(...by))
+  return `${String(h).padStart(2, '0')}h às ${String(h + 1).padStart(2, '0')}h`
+})()
+
+const H = 196
+
+export default function RevenueCard() {
+  const [period, setPeriod] = useState<Period>('hoje')
+  const { pts, total, delta, vs } = DATA[period]
+  const [active, setActive] = useState<number | null>(null)
+  const [ref, { w: W }] = useSize<HTMLDivElement>()
+
+  const geo = useMemo(() => {
+    const max = Math.max(...pts.map(p => p.value)) * 1.12 || 1
+    const xy = pts.map((p, i) => [(i / (pts.length - 1)) * W, 14 + (1 - p.value / max) * (H - 22)] as const)
+    const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('')
+    return { xy, line, area: `${line}L${W},${H}L0,${H}Z` }
+  }, [pts, W])
+
+  /* Sem hover, o marcador fica no pico, como na referência. */
+  const peak = pts.reduce((b, p, i) => (p.value - (pts[i - 1]?.value ?? 0) > pts[b].value - (pts[b - 1]?.value ?? 0) ? i : b), 1)
+  const idx = Math.min(active ?? peak, pts.length - 1)
+  const [px, py] = geo.xy[idx] ?? [0, 0]
+  const prev = pts[idx - 1]?.value
+  const change = prev ? ((pts[idx].value - prev) / prev) * 100 : 0
+  const ticks = [0, 1, 2, 3].map(k => Math.round((k / 3) * (pts.length - 1)))
+
+  const onMove = (e: React.PointerEvent) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setActive(Math.round(((e.clientX - r.left) / r.width) * (pts.length - 1)))
+  }
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') setActive(Math.max(0, idx - 1))
+    if (e.key === 'ArrowRight') setActive(Math.min(pts.length - 1, idx + 1))
+  }
+
+  return (
+    <section aria-labelledby="fat-h">
+      <SectionHead
+        title="Faturamento"
+        sub={<>Vendas aprovadas, no horário de <span className="text-fg-2">Brasília</span></>}
+        right={<button type="button" className="chip !h-9 shrink-0 text-[13px]">Todos os meios</button>}
+      />
+      <div className="card card-tint overflow-hidden p-5 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h3 id="fat-h" className="text-[16px] font-medium">Visão do período</h3>
+          <button type="button" className="text-fg-3 transition-colors hover:text-fg" aria-label="Como o faturamento é calculado"><Info size={20} /></button>
+        </div>
+        <dl className="mt-4 grid gap-1.5 text-[13.5px]">
+          <div className="flex justify-between gap-4"><dt className="text-fg-3">Melhor hora de hoje</dt><dd className="text-fg">{bestHour}</dd></div>
+          <div className="flex justify-between gap-4"><dt className="text-fg-3">Ticket médio</dt><dd className="text-fg">{money(kpis.avgTicket)}</dd></div>
+        </dl>
+
+        <div className="mt-5">
+          <Segmented label="Período" value={period} onChange={p => { setPeriod(p); setActive(null) }}
+            options={[{ value: 'hoje', label: 'Hoje' }, { value: '7d', label: '7 dias' }, { value: '30d', label: '30 dias' }]} />
+        </div>
+
+        <div ref={ref} className="relative mt-6" style={{ height: H }}>
+          {W > 0 && (
+            <svg
+              width="100%" height={H} className="absolute inset-0 block cursor-crosshair touch-pan-y outline-none"
+              role="img" tabIndex={0}
+              aria-label={`Faturamento ${period === 'hoje' ? 'acumulado de hoje' : 'por dia'}. Use as setas para navegar. ${pts[idx].tip}: ${money(pts[idx].value)}`}
+              onPointerMove={onMove} onPointerLeave={() => setActive(null)} onKeyDown={onKey}
+            >
+              <defs>
+                <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#8c66ff" stopOpacity=".28" />
+                  <stop offset="1" stopColor="#8c66ff" stopOpacity="0" />
+                </linearGradient>
+                <pattern id="grid" width={W / 6} height={H / 4} patternUnits="userSpaceOnUse">
+                  <path d={`M${W / 6} 0V${H / 4}M0 ${H / 4}H${W / 6}`} stroke="rgb(255 255 255 / .05)" fill="none" />
+                </pattern>
+              </defs>
+              <rect width={W} height={H} fill="url(#grid)" />
+              <path d={geo.area} fill="url(#fill)" />
+              <path key={period} d={geo.line} pathLength={1} className="draw" fill="none" stroke="#a98fff" strokeWidth="1.75" strokeLinejoin="round" />
+              <line x1={px} x2={px} y1={py} y2={H} stroke="rgb(255 255 255 / .35)" strokeDasharray="3 4" />
+              <circle cx={px} cy={py} r="9" fill="rgb(169 143 255 / .18)" />
+              <circle cx={px} cy={py} r="4.5" fill="#fff" stroke="#a98fff" strokeWidth="2" />
+            </svg>
+          )}
+          {W > 0 && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute w-[150px] rounded-2xl border border-white/10 bg-[#1b1a26]/80 p-3 backdrop-blur-md transition-[left,top] duration-200 ease-out"
+              style={{ left: px + 164 < W ? px + 14 : px - 164, top: Math.min(Math.max(py + 14, 0), H - 92) }}
+            >
+              <p className="text-[12.5px] text-fg-2">{pts[idx].tip}</p>
+              <p className="mt-1.5 text-[15px] font-medium tabular-nums">{money(pts[idx].value)}</p>
+              <p className={`mt-0.5 text-[12px] ${change >= 0 ? 'text-up' : 'text-down'}`}>{change >= 0 ? '+' : '-'}{Math.abs(change).toFixed(2).replace('.', ',')}%</p>
+            </div>
+          )}
+        </div>
+        <div className="mt-3 flex justify-between text-[12.5px] text-fg-3" aria-hidden>
+          {ticks.map(t => <span key={t}>{pts[t].label}</span>)}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-t border-white/[.06] pt-5">
+          <div>
+            <Money value={total} className="text-[clamp(30px,3.1vw,40px)] font-light leading-none" />
+            <p className="mt-2 flex items-center gap-2 text-[12.5px] text-fg-3"><Delta value={delta} /> {vs}</p>
+          </div>
+          <p className="text-right text-[12.5px] leading-snug text-fg-3">Atualizado<br /><span className="text-fg">Hoje, 21:34</span></p>
+        </div>
+      </div>
+    </section>
+  )
+}
