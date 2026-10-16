@@ -36,12 +36,21 @@ export default function RevenueCard() {
   const [active, setActive] = useState<number | null>(null)
   const [ref, { w: W, h: mh }] = useSize<HTMLDivElement>()
   const H = Math.max(mh, 192)
+  const G = 44 // calha dos rótulos do eixo Y
 
   const geo = useMemo(() => {
-    const max = Math.max(...pts.map(p => p.value)) * 1.12 || 1
-    const xy = pts.map((p, i) => [(i / (pts.length - 1)) * W, 14 + (1 - p.value / max) * (H - 22)] as const)
-    const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('')
-    return { xy, line, area: `${line}L${W},${H}L0,${H}Z` }
+    const top = Math.max(...pts.map(p => p.value)) || 1
+    // passo redondo (1, 2, 2,5 ou 5 × 10ⁿ) para o eixo ler "10 mil, 20 mil", nunca "13.427"
+    const raw = top / 4, pow = 10 ** Math.floor(Math.log10(raw)), m = raw / pow
+    const step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * pow
+    const max = Math.ceil(top / step) * step
+    const y = (v: number) => 8 + (1 - v / max) * (H - 16)
+    const PW = W - G
+    const xy = pts.map((p, i) => [G + (i / (pts.length - 1)) * PW, y(p.value)] as const)
+    const line = xy.map(([x, yy], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${yy.toFixed(1)}`).join('')
+    const rows = Array.from({ length: Math.round(max / step) + 1 }, (_, k) => ({ v: k * step, y: y(k * step) }))
+    const cols = Array.from({ length: 7 }, (_, k) => G + (k / 6) * PW)
+    return { xy, line, area: `${line}L${W},${y(0)}L${G},${y(0)}Z`, rows, cols, y0: y(0), yTop: y(max) }
   }, [pts, W, H])
 
   /* Sem hover, o marcador fica no pico, como na referência. */
@@ -54,7 +63,7 @@ export default function RevenueCard() {
 
   const onMove = (e: React.PointerEvent) => {
     const r = e.currentTarget.getBoundingClientRect()
-    setActive(Math.round(((e.clientX - r.left) / r.width) * (pts.length - 1)))
+    setActive(Math.min(pts.length - 1, Math.max(0, Math.round(((e.clientX - r.left - G) / (r.width - G)) * (pts.length - 1)))))
   }
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') setActive(Math.max(0, idx - 1))
@@ -92,11 +101,11 @@ export default function RevenueCard() {
                 <stop offset="0" stopColor="#8c66ff" stopOpacity=".28" />
                 <stop offset="1" stopColor="#8c66ff" stopOpacity="0" />
               </linearGradient>
-              <pattern id="grid" width={W / 6} height={H / 4} patternUnits="userSpaceOnUse">
-                <path d={`M${W / 6} 0V${H / 4}M0 ${H / 4}H${W / 6}`} stroke="rgb(255 255 255 / .05)" fill="none" />
-              </pattern>
             </defs>
-            <rect width={W} height={H} fill="url(#grid)" />
+            <g stroke="rgb(255 255 255 / .07)" shapeRendering="crispEdges">
+              {geo.rows.map(r => <line key={r.v} x1={G} x2={W} y1={r.y} y2={r.y} />)}
+              {geo.cols.map(x => <line key={x} x1={x} x2={x} y1={geo.yTop} y2={geo.y0} strokeOpacity=".7" />)}
+            </g>
             <path d={geo.area} fill="url(#fill)" />
             <path key={period} d={geo.line} pathLength={1} className="draw" fill="none" stroke="#a98fff" strokeWidth="1.75" strokeLinejoin="round" />
             <line x1={px} x2={px} y1={py} y2={H} stroke="rgb(255 255 255 / .35)" strokeDasharray="3 4" />
@@ -104,6 +113,11 @@ export default function RevenueCard() {
             <circle cx={px} cy={py} r="4.5" fill="#fff" stroke="#a98fff" strokeWidth="2" />
           </svg>
         )}
+        {W > 0 && geo.rows.map(r => (
+          <span key={r.v} aria-hidden className="pointer-events-none absolute left-0 -translate-y-1/2 text-[11px] leading-none tabular-nums text-fg-3" style={{ top: r.y }}>
+            {r.v === 0 ? '0' : `${(r.v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`}
+          </span>
+        ))}
         {W > 0 && (
           <div
             aria-hidden
@@ -116,8 +130,11 @@ export default function RevenueCard() {
           </div>
         )}
       </div>
-      <div className="mt-4 flex justify-between text-[12.5px] text-fg-3" aria-hidden>
-        {ticks.map(t => <span key={t}>{pts[t].label}</span>)}
+      {/* rótulos do eixo X na mesma coluna das linhas verticais */}
+      <div className="relative mt-3 h-4 text-[12.5px] leading-4 text-fg-3" aria-hidden>
+        {ticks.map((t, k) => (
+          <span key={t} className="absolute top-0" style={{ left: G + (k / 3) * (W - G), transform: `translateX(${k === 0 ? 0 : k === 3 ? -100 : -50}%)` }}>{pts[t].label}</span>
+        ))}
       </div>
     </section>
   )
