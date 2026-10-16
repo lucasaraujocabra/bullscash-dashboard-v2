@@ -30,7 +30,7 @@ export default function Orb() {
   useEffect(() => {
     const canvas = ref.current!
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' })
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: true }) // preserve: sem isso captura e print leem o canvas em branco
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.05
