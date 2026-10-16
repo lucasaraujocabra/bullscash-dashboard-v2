@@ -4,7 +4,7 @@ import { money, hour } from '../lib/format'
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
   return (
-    <header className="flex h-[76px] items-center gap-3 border-b border-line px-4 sm:px-6 xl:px-8">
+    <header className="flex h-[72px] items-center gap-3 border-b border-line px-4 sm:px-6 xl:px-8">
       <button type="button" onClick={onMenu} className="icon-btn !h-10 !w-10 !rounded-xl lg:hidden" aria-label="Abrir menu"><List size={18} /></button>
       <nav aria-label="Você está em" className="flex min-w-0 items-center gap-3 text-[17px]">
         <House size={26} weight="light" className="hidden shrink-0 text-fg-2 sm:block" aria-hidden />
@@ -60,7 +60,7 @@ export function Ticker() {
   })
   return (
     <div className="tape relative overflow-hidden border-b border-line" aria-label="Últimas autorizações">
-      <ul className="tape-track h-[52px] items-center">{row(false)}{row(true)}</ul>
+      <ul className="tape-track h-12 items-center">{row(false)}{row(true)}</ul>
       <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-ink to-transparent" />
       <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-ink to-transparent" />
     </div>

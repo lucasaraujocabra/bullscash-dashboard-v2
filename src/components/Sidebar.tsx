@@ -64,8 +64,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onClose }: {
         <div aria-hidden className="pointer-events-none absolute -left-24 -top-32 h-[420px] w-[420px] rounded-full opacity-70"
           style={{ background: 'radial-gradient(closest-side, rgb(90 86 140 / .38), transparent)' }} />
 
-        <div className={`relative flex items-center gap-3 px-6 pb-6 pt-7 ${collapsed ? 'lg:flex-col lg:px-0' : ''}`}>
-          <img src="logo-bulls.webp" alt="Bulls" width={74} height={34} className={`h-[30px] w-auto ${collapsed ? 'lg:hidden' : ''}`} />
+        <div className={`relative flex items-center gap-3 px-6 pb-6 pt-6 ${collapsed ? 'lg:flex-col lg:px-0' : ''}`}>
+          <img src="logo-bulls.webp" alt="Bulls" width={74} height={34} className={`h-8 w-auto ${collapsed ? 'lg:hidden' : ''}`} />
           {collapsed && <span className="hidden h-9 w-9 overflow-hidden lg:block"><img src="logo-bulls.webp" alt="Bulls" className="h-9 max-w-none" style={{ width: 'auto' }} /></span>}
           <button type="button" onClick={onToggle} className="icon-btn !h-10 !w-10 !rounded-xl ml-auto hidden lg:inline-grid" aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}>
             <CaretLeft size={16} className={`transition-transform duration-500 ${collapsed ? 'rotate-180' : ''}`} />
@@ -78,15 +78,15 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onClose }: {
         {!collapsed && (
           <div className="relative mx-6 border-y border-line py-6">
             <p className="text-[28px] font-medium leading-[1.08] tracking-[-0.035em]">Boa noite,<br />Lucas</p>
-            <p className="mt-2.5 text-[13.5px] text-fg-3">Último acesso: 16 out 2026, 08:12</p>
+            <p className="mt-2 text-[13.5px] text-fg-3">Último acesso: 16 out 2026, 08:12</p>
           </div>
         )}
 
-        <nav className={`relative flex-1 overflow-y-auto no-scrollbar pb-4 pt-5 ${collapsed ? 'px-4' : 'px-4'}`}>
+        <nav className={`relative flex-1 overflow-y-auto no-scrollbar pb-4 pt-6 ${collapsed ? 'px-4' : 'px-4'}`}>
           {GROUPS.map(g => (
-            <div key={g.group} className="mb-3">
+            <div key={g.group} className="mb-4">
               {!collapsed
-                ? <p className="mb-1.5 px-3.5 text-[13px] text-fg-3">{g.group}</p>
+                ? <p className="mb-2 px-4 text-[13px] text-fg-3">{g.group}</p>
                 : <div className="mx-auto mb-2 mt-1 h-px w-6 bg-line" />}
               <div className="flex flex-col gap-0.5">
                 {g.items.map(i => <NavLink key={i.label} item={i} collapsed={collapsed} />)}

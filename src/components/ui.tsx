@@ -58,12 +58,14 @@ export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   )
 }
 
-export function SectionHead({ title, sub, right }: { title: string; sub?: ReactNode; right?: ReactNode }) {
+/* Cabeçalho único de card: bloco de 40 + rótulo + título. É o que deixa todos os boxes com a mesma anatomia. */
+export function CardHead({ tile, label, title, id, right }: { tile: ReactNode; label: ReactNode; title: string; id?: string; right?: ReactNode }) {
   return (
-    <div className="mb-4 flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <h2 className="text-[19px] font-semibold tracking-[-0.02em] text-fg">{title}</h2>
-        {sub && <p className="mt-1 text-[13.5px] text-fg-3">{sub}</p>}
+    <div className="flex items-center gap-4">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-raised text-fg-2">{tile}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12.5px] leading-4 text-fg-3">{label}</p>
+        <h3 id={id} className="truncate text-[16px] font-medium leading-6 text-fg">{title}</h3>
       </div>
       {right}
     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DotsThreeVertical, ClockCounterClockwise, TrendUp, TrendDown, PlugsConnected } from '@phosphor-icons/react'
 import { acquirers } from '../lib/data'
-import { Delta } from './ui'
+import { Delta, CardHead } from './ui'
 
 export const ACQ_COLOR: Record<string, string> = { Stone: '#1fbf7a', Cielo: '#2aa7ea', Getnet: '#ef4a4f', Adyen: '#7c838d' }
 
@@ -50,10 +50,10 @@ export default function Acquirers() {
   const [f, setF] = useState<(typeof FILTERS)[number]>('Todas')
   return (
     <section aria-labelledby="acq-h">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 text-[13.5px] text-fg-2"><ClockCounterClockwise size={18} aria-hidden /> Atualiza a cada minuto</p>
-          <h2 id="acq-h" className="mt-1.5 text-[24px] font-medium tracking-[-0.03em]">Aprovação por adquirente</h2>
+          <h2 id="acq-h" className="mt-2 text-[24px] font-medium tracking-[-0.03em]">Aprovação por adquirente</h2>
         </div>
         <div className="flex gap-1.5" role="group" aria-label="Filtrar por meio">
           {FILTERS.map(x => (
@@ -62,24 +62,18 @@ export default function Acquirers() {
           ))}
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 wide:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 wide:grid-cols-4">
         {acquirers.map(a => {
           const c = ACQ_COLOR[a.name]
           const d = DELTA[a.name]
           const [int, dec] = a.approval.toFixed(1).split('.')
           return (
-            <article key={a.name} className="card relative overflow-hidden p-5">
+            <article key={a.name} className="card relative overflow-hidden p-6">
               <div aria-hidden className="pointer-events-none absolute -left-10 top-16 h-40 w-40 rounded-full opacity-30 blur-2xl"
                 style={{ background: a.connected ? c : 'transparent' }} />
-              <div className="relative flex items-center gap-3.5">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl border border-line bg-raised">
-                  <AcqMark name={a.name} size={28} />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[12.5px] text-fg-3">{a.name === 'Cielo' ? 'Cartão e boleto' : 'Cartão e Pix'}</p>
-                  <p className="text-[17px] font-medium">{a.name}</p>
-                </div>
-                <button type="button" className="icon-btn ml-auto !h-10 !w-10 !rounded-xl" aria-label={`Opções de ${a.name}`}><DotsThreeVertical size={18} weight="bold" /></button>
+              <div className="relative">
+                <CardHead tile={<AcqMark name={a.name} size={24} />} label={a.name === 'Cielo' ? 'Cartão e boleto' : 'Cartão e Pix'} title={a.name}
+                  right={<button type="button" className="icon-btn !h-10 !w-10 !rounded-xl" aria-label={`Opções de ${a.name}`}><DotsThreeVertical size={18} weight="bold" /></button>} />
               </div>
 
               {a.connected ? (
@@ -97,13 +91,13 @@ export default function Acquirers() {
                     <Delta value={d} />
                     <span className="ml-auto whitespace-nowrap text-[12px] text-fg-3">{a.share.toFixed(0)}% do volume</span>
                   </div>
-                  <div className="relative -mx-5 -mb-5 mt-3"><Spark data={a.spark} color={c} /></div>
+                  <div className="relative -mx-6 -mb-6 mt-4"><Spark data={a.spark} color={c} /></div>
                 </>
               ) : (
-                <div className="relative mt-6 flex min-h-[208px] flex-col justify-between">
+                <div className="relative mt-6 flex min-h-[208px] flex-col justify-between gap-6">
                   <div>
                     <p className="text-[15px] text-fg">Ainda não conectada</p>
-                    <p className="mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-fg-3">Ligue a Adyen para dividir o volume de cartão e subir a aprovação em horário de pico.</p>
+                    <p className="mt-2 max-w-[30ch] text-[13px] leading-relaxed text-fg-3">Ligue a Adyen para dividir o volume de cartão e subir a aprovação em horário de pico.</p>
                   </div>
                   <button type="button" className="btn-ghost self-start !h-10 !px-4"><PlugsConnected size={16} aria-hidden /> Conectar</button>
                 </div>

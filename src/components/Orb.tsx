@@ -52,8 +52,8 @@ export default function Orb() {
       envMapIntensity: 0.55,
     })
     const mesh = new THREE.Mesh(geo, mat)
-    mesh.position.y = -0.95
-    mesh.scale.setScalar(1.28)
+    mesh.position.y = -0.7
+    mesh.scale.setScalar(1.5)
     mesh.rotation.z = 0.12
     scene.add(mesh)
 
